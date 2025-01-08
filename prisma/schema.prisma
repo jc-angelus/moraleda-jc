@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Developer: Johans Cuellar
+// Created: 01/07/2025
+
+generator client {
+  provider = "prisma-client-js"   
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id                    Int       @id @default(autoincrement())
+  username              String
+  email                 String    @unique  
+  password_hash         String  
+  createdAt             DateTime  @default(now())  
+  projects              UsersProjects[]
+  organizational_units  UsersOrganizational_Units[]    
+  role                  UsersRoles[]
+  users_client_id       Transfers? @relation("Users_client_id")
+  users_transmitter_id  Transfers? @relation("Users_transmitter_id")
+}
+
+model Roles {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique  
+  descripcion     String  
+  permission      PermissionsRoles[]
+  user            UsersRoles[]
+}
+
+model Permissions {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique  
+  descripcion     String
+  role            PermissionsRoles[]  
+}
+
+model Projects {
+  id                    Int       @id @default(autoincrement())
+  name                  String    @unique  
+  descripcion           String
+  createdAt             DateTime  @default(now()) 
+  user                  UsersProjects[]      
+  organizational_units Organizational_Units[]
+}
+
+model Organizational_Units {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  createdAt       DateTime  @default(now()) 
+  user            UsersOrganizational_Units[]
+  projects        Projects  @relation(fields: [project_id], references: [id])  
+  project_id     Int @unique  
+}
+
+model Vehicles {
+  id             Int       @id @default(autoincrement())
+  plate          String
+  service        String
+  createdAt      DateTime  @default(now()) 
+  transfer       Transfers?
+}
+
+model Transfers {
+  id                      Int       @id @default(autoincrement())
+  type                    String
+  Vehicle                 Vehicles @relation(fields: [vehicle_id], references: [id])  
+  vehicle_id              Int @unique
+  Users_client_id         Users @relation("Users_client_id", fields: [client_id], references: [id])
+  client_id               Int @unique
+  Users_transmitter_id    Users @relation("Users_transmitter_id", fields: [transmitter_id], references: [id])  
+  transmitter_id          Int @unique
+  project_id              Int
+  organizational_unit_id  Int 
+}
+
+model UsersProjects {
+  id         Int   @id @default(autoincrement())
+  user       Users? @relation(fields: [userId], references: [id])
+  project    Projects?  @relation(fields: [projectId], references: [id])
+  userId     Int?
+  projectId  Int?
+  @@index([userId, projectId])
+}
+
+model UsersOrganizational_Units {
+  id                            Int   @id @default(autoincrement())
+  user                          Users? @relation(fields: [userId], references: [id])
+  Organizational_Unit           Organizational_Units?  @relation(fields: [organizational_unitId], references: [id])
+  userId                        Int?
+  organizational_unitId          Int?
+  @@index([userId, organizational_unitId])
+}
+
+model PermissionsRoles  {
+  id            Int   @id @default(autoincrement())
+  rol           Roles? @relation(fields: [rolId], references: [id])
+  permission    Permissions?  @relation(fields: [permissionId], references: [id])
+  rolId         Int?
+  permissionId  Int?
+  @@index([rolId, permissionId])
+}
+
+model UsersRoles  {
+  id            Int   @id @default(autoincrement())
+  rol           Roles? @relation(fields: [rolId], references: [id])
+  user          Users?  @relation(fields: [userId], references: [id])
+  rolId         Int?
+  userId  Int?
+  @@index([rolId, userId])
+}
